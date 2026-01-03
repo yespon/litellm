@@ -4782,10 +4782,30 @@ class ProxyStartupEvent:
             )
 
             scheduler.add_job(
+                proxy_logging_obj.feishu_alerting_instance.send_weekly_spend_report,
+                "interval",
+                days=days,
+                next_run_time=datetime.now()
+                + timedelta(seconds=15 + random.randint(0, 300)),
+                args=[spend_report_frequency],
+                id="feishu_weekly_spend_report_job",
+                replace_existing=True,
+                misfire_grace_time=APSCHEDULER_MISFIRE_GRACE_TIME,
+            )
+
+            scheduler.add_job(
                 proxy_logging_obj.slack_alerting_instance.send_monthly_spend_report,
                 "cron",
                 day=1,
                 id="monthly_spend_report_job",
+                replace_existing=True,
+            )
+
+            scheduler.add_job(
+                proxy_logging_obj.feishu_alerting_instance.send_monthly_spend_report,
+                "cron",
+                day=1,
+                id="feishu_monthly_spend_report_job",
                 replace_existing=True,
             )
 
@@ -4801,7 +4821,18 @@ class ProxyStartupEvent:
                     id="prometheus_fallback_stats_job",
                     replace_existing=True,
                 )
+
+                scheduler.add_job(
+                    proxy_logging_obj.feishu_alerting_instance.send_fallback_stats_from_prometheus,
+                    "cron",
+                    hour=PROMETHEUS_FALLBACK_STATS_SEND_TIME_HOURS,
+                    minute=0,
+                    timezone=ZoneInfo("America/Los_Angeles"),
+                    id="feishu_prometheus_fallback_stats_job",
+                    replace_existing=True,
+                )
                 await proxy_logging_obj.slack_alerting_instance.send_fallback_stats_from_prometheus()
+                await proxy_logging_obj.feishu_alerting_instance.send_fallback_stats_from_prometheus()
 
     @classmethod
     async def _setup_prisma_client(

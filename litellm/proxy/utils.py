@@ -80,6 +80,7 @@ from litellm.exceptions import RejectedRequestError
 from litellm.integrations.custom_guardrail import CustomGuardrail
 from litellm.integrations.custom_logger import CustomLogger
 from litellm.integrations.SlackAlerting.slack_alerting import SlackAlerting
+from litellm.integrations.FeishuAlerting.feishu_alerting import FeishuAlerting
 from litellm.integrations.SlackAlerting.utils import _add_langfuse_trace_id_to_alert
 from litellm.litellm_core_utils.litellm_logging import Logging
 from litellm.litellm_core_utils.safe_json_dumps import safe_dumps
@@ -312,6 +313,11 @@ class ProxyLogging:
             alerting=self.alerting,
             internal_usage_cache=self.internal_usage_cache.dual_cache,
         )
+        self.feishu_alerting_instance: FeishuAlerting = FeishuAlerting(
+            alerting_threshold=self.alerting_threshold,
+            alerting=self.alerting,
+            internal_usage_cache=self.internal_usage_cache.dual_cache,
+        )
         self.email_logging_instance: Optional[Any] = None
         if BaseEmailLogger is not None:
             email_logger_class = _get_email_logger_class()
@@ -328,6 +334,8 @@ class ProxyLogging:
         # Guard flags to prevent duplicate background tasks
         self.daily_report_started: bool = False
         self.hanging_requests_check_started: bool = False
+        self.feishu_daily_report_started: bool = False
+        self.feishu_hanging_requests_check_started: bool = False
 
     def startup_event(
         self,
@@ -337,6 +345,9 @@ class ProxyLogging:
         """Initialize logging and alerting on proxy startup"""
         ## UPDATE SLACK ALERTING ##
         self.slack_alerting_instance.update_values(llm_router=llm_router)
+
+        ## UPDATE FEISHU ALERTING ##
+        self.feishu_alerting_instance.update_values(llm_router=llm_router)
 
         ## UPDATE INTERNAL USAGE CACHE ##
         self.update_values(
@@ -360,6 +371,18 @@ class ProxyLogging:
             self.daily_report_started = True
 
         if (
+            self.feishu_alerting_instance is not None
+            and "daily_reports" in self.feishu_alerting_instance.alert_types
+            and not self.feishu_daily_report_started
+        ):
+            asyncio.create_task(
+                self.feishu_alerting_instance._run_scheduled_daily_report(
+                    llm_router=llm_router
+                )
+            )  # RUN DAILY REPORT (if scheduled)
+            self.feishu_daily_report_started = True
+
+        if (
             self.slack_alerting_instance is not None
             and AlertType.llm_requests_hanging
             in self.slack_alerting_instance.alert_types
@@ -369,6 +392,17 @@ class ProxyLogging:
                 self.slack_alerting_instance.hanging_request_check.check_for_hanging_requests()
             )  # RUN HANGING REQUEST CHECK (if user wants to alert on hanging requests)
             self.hanging_requests_check_started = True
+
+        if (
+            self.feishu_alerting_instance is not None
+            and AlertType.llm_requests_hanging
+            in self.feishu_alerting_instance.alert_types
+            and not self.feishu_hanging_requests_check_started
+        ):
+            asyncio.create_task(
+                self.feishu_alerting_instance.hanging_request_check.check_for_hanging_requests()
+            )  # RUN HANGING REQUEST CHECK (if user wants to alert on hanging requests)
+            self.feishu_hanging_requests_check_started = True
 
     def update_values(
         self,
@@ -414,6 +448,28 @@ class ProxyLogging:
                 litellm.logging_callback_manager.add_litellm_success_callback(
                     self.slack_alerting_instance.response_taking_too_long_callback
                 )
+
+            if self.alerting is not None and "feishu" in self.alerting:
+                # NOTE: ENSURE we only add callbacks when alerting is on
+                # We should NOT add callbacks when alerting is off
+                if (
+                    "daily_reports" in self.alert_types
+                    or "outage_alerts" in self.alert_types
+                    or "region_outage_alerts" in self.alert_types
+                ):
+                    litellm.logging_callback_manager.add_litellm_callback(self.feishu_alerting_instance)  # type: ignore
+                litellm.logging_callback_manager.add_litellm_success_callback(
+                    self.feishu_alerting_instance.response_taking_too_long_callback
+                )
+
+            # Update Feishu values
+            self.feishu_alerting_instance.update_values(
+                alerting=self.alerting,
+                alerting_threshold=self.alerting_threshold,
+                alert_types=self.alert_types,
+                alerting_args=alerting_args,
+                alert_to_webhook_url=self.alert_to_webhook_url,
+            )
 
         if redis_cache is not None:
             self.internal_usage_cache.dual_cache.redis_cache = redis_cache
