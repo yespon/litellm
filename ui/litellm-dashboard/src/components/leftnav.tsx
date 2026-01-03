@@ -22,6 +22,7 @@ import {
   TeamOutlined,
   ToolOutlined,
   UserOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { ConfigProvider, Layout, Menu } from "antd";
@@ -30,16 +31,17 @@ import { all_admin_roles, internalUserRoles, isAdminRole, rolesWithWriteAccess }
 import type { Organization } from "./networking";
 import UsageIndicator from "./usage_indicator";
 import NewBadge from "./common_components/NewBadge";
+import Link from "next/link";
+import { getProxyBaseUrl } from "./networking";
+
 const { Sider } = Layout;
 
-// Define the props type
 interface SidebarProps {
   setPage: (page: string) => void;
   defaultSelectedKey: string;
   collapsed?: boolean;
 }
 
-// Menu item configuration
 interface MenuItem {
   key: string;
   page: string;
@@ -49,7 +51,6 @@ interface MenuItem {
   icon?: React.ReactNode;
 }
 
-// Group configuration
 interface MenuGroup {
   groupLabel: string;
   items: MenuItem[];
@@ -59,8 +60,8 @@ interface MenuGroup {
 const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapsed = false }) => {
   const { userId, accessToken, userRole } = useAuthorized();
   const { data: organizations } = useOrganizations();
+  const baseUrl = getProxyBaseUrl();
 
-  // Check if user is an org_admin
   const isOrgAdmin = useMemo(() => {
     if (!userId || !organizations) return false;
     return organizations.some((org: Organization) =>
@@ -68,7 +69,6 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
     );
   }, [userId, organizations]);
 
-  // Navigate to page helper
   const navigateToPage = (page: string) => {
     const newSearchParams = new URLSearchParams(window.location.search);
     newSearchParams.set("page", page);
@@ -76,11 +76,16 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
     setPage(page);
   };
 
-  // Menu groups organized by category
   const menuGroups: MenuGroup[] = [
     {
       groupLabel: "AI GATEWAY",
       items: [
+        {
+          key: "dashboard",
+          page: "dashboard",
+          label: "Dashboard",
+          icon: <AppstoreOutlined />,
+        },
         {
           key: "api-keys",
           page: "api-keys",
@@ -104,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
         {
           key: "agents",
           page: "agents",
-          label: <span className="flex items-center gap-4">Agents</span>,
+          label: "Agents",
           icon: <RobotOutlined />,
           roles: rolesWithWriteAccess,
         },
@@ -121,27 +126,6 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           icon: <SafetyOutlined />,
           roles: all_admin_roles,
         },
-        {
-          key: "tools",
-          page: "tools",
-          label: "Tools",
-          icon: <ToolOutlined />,
-          children: [
-            {
-              key: "search-tools",
-              page: "search-tools",
-              label: "Search Tools",
-              icon: <SearchOutlined />,
-            },
-            {
-              key: "vector-stores",
-              page: "vector-stores",
-              label: "Vector Stores",
-              icon: <DatabaseOutlined />,
-              roles: all_admin_roles,
-            },
-          ],
-        },
       ],
     },
     {
@@ -152,7 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           page: "new_usage",
           icon: <BarChartOutlined />,
           roles: [...all_admin_roles, ...internalUserRoles],
-          label: <span className="flex items-center gap-4">Usage</span>,
+          label: "Usage",
         },
         {
           key: "logs",
@@ -216,6 +200,27 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           icon: <ExperimentOutlined />,
           children: [
             {
+              key: "tools",
+              page: "tools",
+              label: "Tools",
+              icon: <ToolOutlined />,
+              children: [
+                {
+                  key: "search-tools",
+                  page: "search-tools",
+                  label: "Search Tools",
+                  icon: <SearchOutlined />,
+                },
+                {
+                  key: "vector-stores",
+                  page: "vector-stores",
+                  label: "Vector Stores",
+                  icon: <DatabaseOutlined />,
+                  roles: all_admin_roles,
+                },
+              ],
+            },
+            {
               key: "caching",
               page: "caching",
               label: "Caching",
@@ -243,12 +248,6 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
               icon: <TagsOutlined />,
               roles: all_admin_roles,
             },
-            {
-              key: "4",
-              page: "usage",
-              label: "Old Usage",
-              icon: <BarChartOutlined />,
-            },
           ],
         },
       ],
@@ -261,7 +260,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           key: "settings",
           page: "settings",
           label: (
-            <span className="flex items-center gap-4">
+            <span className="flex items-center gap-2">
               Settings <NewBadge />
             </span>
           ),
@@ -309,11 +308,9 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
     },
   ];
 
-  // Filter items based on user role
   const filterItemsByRole = (items: MenuItem[]): MenuItem[] => {
     return items
       .filter((item) => {
-        // Special handling for organizations menu item - allow org_admins
         if (item.key === "organizations") {
           return !item.roles || item.roles.includes(userRole) || isOrgAdmin;
         }
@@ -325,12 +322,10 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
       }));
   };
 
-  // Build menu items with groups
   const buildMenuItems = (): MenuProps["items"] => {
     const items: MenuProps["items"] = [];
 
     menuGroups.forEach((group) => {
-      // Check if group has role restriction
       if (group.roles && !group.roles.includes(userRole)) {
         return;
       }
@@ -338,21 +333,10 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
       const filteredItems = filterItemsByRole(group.items);
       if (filteredItems.length === 0) return;
 
-      // Add group with items
       items.push({
         type: "group",
         label: collapsed ? null : (
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              color: "#6b7280",
-              letterSpacing: "0.05em",
-              padding: "12px 0 4px 12px",
-              display: "block",
-              marginBottom: "2px",
-            }}
-          >
+          <span className="text-[11px] font-bold text-slate-400 tracking-wider px-3 uppercase mb-2 mt-4 block">
             {group.groupLabel}
           </span>
         ),
@@ -360,6 +344,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           key: item.key,
           icon: item.icon,
           label: item.label,
+          className: "my-1",
           children: item.children?.map((child) => ({
             key: child.key,
             icon: child.icon,
@@ -374,7 +359,6 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
     return items;
   };
 
-  // Find selected menu key
   const findMenuItemKey = (page: string): string => {
     for (const group of menuGroups) {
       for (const item of group.items) {
@@ -391,32 +375,34 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
   const selectedMenuKey = findMenuItemKey(defaultSelectedKey);
 
   return (
-    <Layout>
-      <Sider
-        theme="light"
-        width={220}
-        collapsed={collapsed}
-        collapsedWidth={80}
-        collapsible
-        trigger={null}
-        style={{
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          position: "relative",
-        }}
-      >
+    <div className="flex flex-col h-full bg-white">
+      {/* Brand Area */}
+      <div className="h-16 flex items-center px-6 border-b border-slate-100 flex-shrink-0">
+        <Link href={baseUrl ? baseUrl : "/"} className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+            P
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-lg text-slate-800 tracking-tight">Prism</span>
+          )}
+        </Link>
+      </div>
+
+      {/* Menu Area */}
+      <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
         <ConfigProvider
           theme={{
             components: {
               Menu: {
-                iconSize: 15,
-                fontSize: 13,
-                itemMarginInline: 4,
-                itemPaddingInline: 8,
-                itemHeight: 30,
-                itemBorderRadius: 6,
-                subMenuItemBorderRadius: 6,
-                groupTitleFontSize: 10,
-                groupTitleLineHeight: 1.5,
+                itemSelectedBg: "#eff6ff", // brand-faint
+                itemSelectedColor: "#4f46e5", // brand-DEFAULT
+                itemHoverBg: "#f8fafc", // slate-50
+                itemColor: "#64748b", // slate-500
+                iconSize: 16,
+                fontSize: 14,
+                itemBorderRadius: 8,
+                itemMarginInline: 12,
+                itemHeight: 36,
               },
             },
           }}
@@ -426,19 +412,21 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
             selectedKeys={[selectedMenuKey]}
             defaultOpenKeys={[]}
             inlineCollapsed={collapsed}
-            className="custom-sidebar-menu"
-            style={{
-              borderRight: 0,
-              backgroundColor: "transparent",
-              fontSize: "13px",
-              paddingTop: "4px",
-            }}
             items={buildMenuItems()}
+            style={{ borderRight: 0 }}
+            className="custom-sidebar"
           />
         </ConfigProvider>
-        {isAdminRole(userRole) && !collapsed && <UsageIndicator accessToken={accessToken} width={220} />}
-      </Sider>
-    </Layout>
+      </div>
+
+      {/* User / Usage Area */}
+      {isAdminRole(userRole) && !collapsed && (
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="mb-2 text-xs font-medium text-slate-500 uppercase tracking-wider">Usage</div>
+          <UsageIndicator accessToken={accessToken} width={180} />
+        </div>
+      )}
+    </div>
   );
 };
 

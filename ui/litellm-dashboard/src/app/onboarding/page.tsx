@@ -76,10 +76,10 @@ export default function Onboarding() {
     claimOnboardingToken(accessToken, inviteID, userID, formValues.password).then((data) => {
       // set cookie "token" to jwtToken
       document.cookie = "token=" + jwtToken;
-      
+
       const proxyBaseUrl = getProxyBaseUrl();
       console.log("proxyBaseUrl:", proxyBaseUrl);
-      
+
       // Construct the full redirect URL using the proxyBaseUrl which includes the server root path
       let redirectUrl = proxyBaseUrl ? `${proxyBaseUrl}/ui/?login=success` : "/ui/?login=success";
       console.log("redirecting to:", redirectUrl);
@@ -92,7 +92,7 @@ export default function Onboarding() {
   return (
     <div className="mx-auto w-full max-w-md mt-10">
       <Card>
-        <Title className="text-sm mb-5 text-center">🚅 LiteLLM</Title>
+        <Title className="text-sm mb-5 text-center">🚅 Prism</Title>
         <Title className="text-xl">{action === "reset_password" ? "Reset Password" : "Sign up"}</Title>
         <Text>
           {action === "reset_password"

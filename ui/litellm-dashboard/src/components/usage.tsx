@@ -585,10 +585,15 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 <TabPanel>
                   <Grid numItems={2} className="gap-2 h-[100vh] w-full">
                     <Col numColSpan={2}>
-                      <Text className="text-tremor-default text-tremor-content dark:text-dark-tremor-content mb-2 mt-2 text-lg">
-                        Project Spend {new Date().toLocaleString("default", { month: "long" })} 1 -{" "}
-                        {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}
-                      </Text>
+                      <div className="mb-4 mt-2">
+                        <h3 className="text-lg font-semibold text-slate-800">
+                          Project Spend
+                        </h3>
+                        <p className="text-sm text-slate-500">
+                          {new Date().toLocaleString("default", { month: "long" })} 1 -{" "}
+                          {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}
+                        </p>
+                      </div>
                       <ViewUserSpend userSpend={totalMonthlySpend} selectedTeam={null} userMaxBudget={null} />
                     </Col>
                     <Col numColSpan={2}>
@@ -598,11 +603,11 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                           data={keySpendData}
                           index="date"
                           categories={["spend"]}
-                          colors={["cyan"]}
+                          colors={["indigo"]}
                           valueFormatter={valueFormatter}
                           yAxisWidth={100}
                           tickGap={5}
-                          // customTooltip={customTooltip}
+                        // customTooltip={customTooltip}
                         />
                       </Card>
                     </Col>
@@ -620,7 +625,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                           data={topModels}
                           index="key"
                           categories={["spend"]}
-                          colors={["cyan"]}
+                          colors={["indigo"]}
                           yAxisWidth={200}
                           layout="vertical"
                           showXAxis={false}
@@ -642,7 +647,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                                 data={spendByProvider}
                                 index="provider"
                                 category="spend"
-                                colors={["cyan"]}
+                                colors={["indigo"]}
                                 valueFormatter={(value) => `$${formatNumberWithCommas(value, 2)}`}
                               />
                             </Col>
@@ -688,7 +693,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                             data={globalActivity.daily_data}
                             valueFormatter={valueFormatterNumbers}
                             index="date"
-                            colors={["cyan"]}
+                            colors={["indigo"]}
                             categories={["api_requests"]}
                             onValueChange={(v) => console.log(v)}
                           />
@@ -702,7 +707,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                             data={globalActivity.daily_data}
                             valueFormatter={valueFormatterNumbers}
                             index="date"
-                            colors={["cyan"]}
+                            colors={["indigo"]}
                             categories={["total_tokens"]}
                             onValueChange={(v) => console.log(v)}
                           />
@@ -723,7 +728,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                                 className="h-40"
                                 data={globalActivity.daily_data}
                                 index="date"
-                                colors={["cyan"]}
+                                colors={["indigo"]}
                                 categories={["api_requests"]}
                                 valueFormatter={valueFormatterNumbers}
                                 onValueChange={(v) => console.log(v)}
@@ -737,7 +742,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                                 className="h-40"
                                 data={globalActivity.daily_data}
                                 index="date"
-                                colors={["cyan"]}
+                                colors={["indigo"]}
                                 categories={["total_tokens"]}
                                 valueFormatter={valueFormatterNumbers}
                                 onValueChange={(v) => console.log(v)}

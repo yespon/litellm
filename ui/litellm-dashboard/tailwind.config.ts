@@ -1,6 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 
 const colors = require("tailwindcss/colors");
+const uiColors = require("./ui_colors.json");
+
 module.exports = {
   content: ["./src/**/*.{js,ts,jsx,tsx}", "./node_modules/@tremor/**/*.{js,ts,jsx,tsx}"],
   theme: {
@@ -8,33 +10,34 @@ module.exports = {
     current: "currentColor",
     extend: {
       colors: {
+        ...uiColors,
         // light mode
         tremor: {
           brand: {
-            faint: colors.indigo[50],
-            muted: colors.indigo[200],
-            subtle: colors.indigo[400],
-            DEFAULT: colors.indigo[500],
-            emphasis: colors.indigo[700],
-            inverted: colors.white,
+            faint: uiColors.brand.faint,
+            muted: uiColors.brand.muted,
+            subtle: uiColors.brand.subtle,
+            DEFAULT: uiColors.brand.DEFAULT,
+            emphasis: uiColors.brand.emphasis,
+            inverted: uiColors.brand.inverted,
           },
           background: {
-            muted: colors.gray[50],
-            subtle: colors.gray[100],
+            muted: uiColors.slate["50"],
+            subtle: uiColors.slate["100"],
             DEFAULT: colors.white,
-            emphasis: colors.gray[700],
+            emphasis: uiColors.slate["700"],
           },
           border: {
-            DEFAULT: colors.gray[200],
+            DEFAULT: uiColors.slate["200"],
           },
           ring: {
-            DEFAULT: colors.gray[200],
+            DEFAULT: uiColors.slate["200"],
           },
           content: {
-            subtle: colors.gray[400],
-            DEFAULT: colors.gray[500],
-            emphasis: colors.gray[700],
-            strong: colors.gray[900],
+            subtle: uiColors.slate["400"],
+            DEFAULT: uiColors.slate["500"],
+            emphasis: uiColors.slate["700"],
+            strong: uiColors.slate["900"],
             inverted: colors.white,
           },
         },

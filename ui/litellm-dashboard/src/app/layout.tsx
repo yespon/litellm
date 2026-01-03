@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LiteLLM Dashboard",
-  description: "LiteLLM Proxy Admin UI",
+  title: "Prism Dashboard",
+  description: "Prism AI Gateway Admin",
   icons: { icon: "./favicon.ico" },
 };
 

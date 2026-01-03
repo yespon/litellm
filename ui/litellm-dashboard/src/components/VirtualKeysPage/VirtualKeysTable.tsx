@@ -127,7 +127,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
             <Button
               size="xs"
               variant="light"
-              className="font-mono text-blue-500 bg-blue-50 hover:bg-blue-100 text-xs font-normal px-2 py-0.5 text-left overflow-hidden truncate max-w-[200px]"
+              className="font-mono text-indigo-600 bg-indigo-50 hover:bg-indigo-100 text-xs font-normal px-2 py-0.5 text-left overflow-hidden truncate max-w-[200px]"
               onClick={() => setSelectedKey(info.row.original)}
             >
               {info.getValue() ? `${(info.getValue() as string).slice(0, 7)}...` : "-"}
@@ -341,7 +341,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                               <Text>All Proxy Models</Text>
                             </Badge>
                           ) : (
-                            <Badge key={index} size={"xs"} color="blue">
+                            <Badge key={index} size={"xs"} color="indigo">
                               <Text>
                                 {model.length > 30
                                   ? `${getModelDisplayName(model).slice(0, 30)}...`
@@ -365,7 +365,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                                   <Text>All Proxy Models</Text>
                                 </Badge>
                               ) : (
-                                <Badge key={index + 3} size={"xs"} color="blue">
+                                <Badge key={index + 3} size={"xs"} color="indigo">
                                   <Text>
                                     {model.length > 30
                                       ? `${getModelDisplayName(model).slice(0, 30)}...`
@@ -598,11 +598,10 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                           <TableHeaderCell
                             key={header.id}
                             data-header-id={header.id}
-                            className={`py-1 h-8 relative hover:bg-gray-50 ${
-                              header.id === "actions"
+                            className={`py-1 h-8 relative hover:bg-gray-50 ${header.id === "actions"
                                 ? "sticky right-0 bg-white shadow-[-4px_0_8px_-6px_rgba(0,0,0,0.1)]"
                                 : ""
-                            }`}
+                              }`}
                             style={{
                               width: header.getSize(),
                               position: "relative",
@@ -631,8 +630,8 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                                 <div className="w-4">
                                   {header.column.getIsSorted() ? (
                                     {
-                                      asc: <ChevronUpIcon className="h-4 w-4 text-blue-500" />,
-                                      desc: <ChevronDownIcon className="h-4 w-4 text-blue-500" />,
+                                      asc: <ChevronUpIcon className="h-4 w-4 text-indigo-500" />,
+                                      desc: <ChevronDownIcon className="h-4 w-4 text-indigo-500" />,
                                     }[header.column.getIsSorted() as string]
                                   ) : (
                                     <SwitchVerticalIcon className="h-4 w-4 text-gray-400" />
@@ -650,7 +649,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                                   top: 0,
                                   height: "100%",
                                   width: "5px",
-                                  background: header.column.getIsResizing() ? "#3b82f6" : "transparent",
+                                  background: header.column.getIsResizing() ? "#4f46e5" : "transparent",
                                   cursor: "col-resize",
                                   userSelect: "none",
                                   touchAction: "none",
