@@ -4,7 +4,7 @@ services:
       context: .
       args:
         target: runtime
-    image: prism:20260102 #docker.litellm.ai/berriai/litellm:main-stable
+    image: prism:20260103 #docker.litellm.ai/berriai/litellm:main-stable
     #########################################
     ## Uncomment these lines to start proxy with a config.yaml file ##
     # volumes:
