@@ -36,9 +36,30 @@ class _PROXY_MaxBudgetLimiter(CustomLogger):
             if curr_spend is None:
                 return
 
-            # CHECK IF REQUEST ALLOWED
-            if curr_spend >= max_budget:
-                raise HTTPException(status_code=429, detail="Max budget limit reached.")
+            # Multi-currency budget check
+            try:
+                from litellm.proxy.utils.currency_helper import get_currency_helper
+                currency_helper = get_currency_helper()
+
+                spend_currency = user_row.get("spend_currency", "USD")
+                budget_currency = user_row.get("budget_currency", "USD")
+
+                is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                    spend_amount=curr_spend,
+                    spend_currency=spend_currency,
+                    budget_amount=max_budget,
+                    budget_currency=budget_currency,
+                )
+
+                if is_over_budget:
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"Max budget limit reached. Spend: {curr_spend} {spend_currency}, Budget: {max_budget} {budget_currency}",
+                    )
+            except ImportError:
+                # Fallback to simple comparison if currency_helper not available
+                if curr_spend >= max_budget:
+                    raise HTTPException(status_code=429, detail="Max budget limit reached.")
         except HTTPException as e:
             raise e
         except Exception as e:

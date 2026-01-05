@@ -168,12 +168,36 @@ async def common_checks(
         and user_object.max_budget is not None
     ):
         user_budget = user_object.max_budget
-        if user_budget < user_object.spend:
-            raise litellm.BudgetExceededError(
-                current_cost=user_object.spend,
-                max_budget=user_budget,
-                message=f"ExceededBudget: User={user_object.user_id} over budget. Spend={user_object.spend}, Budget={user_budget}",
+
+        # Multi-currency budget check
+        try:
+            from litellm.proxy.utils.currency_helper import get_currency_helper
+            currency_helper = get_currency_helper()
+
+            spend_currency = getattr(user_object, "spend_currency", "USD")
+            budget_currency = getattr(user_object, "budget_currency", "USD")
+
+            is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=user_object.spend,
+                spend_currency=spend_currency,
+                budget_amount=user_budget,
+                budget_currency=budget_currency,
             )
+
+            if is_over_budget:
+                raise litellm.BudgetExceededError(
+                    current_cost=user_object.spend,
+                    max_budget=user_budget,
+                    message=f"ExceededBudget: User={user_object.user_id} over budget. Spend={user_object.spend} {spend_currency}, Budget={user_budget} {budget_currency}",
+                )
+        except ImportError:
+            # Fallback to simple comparison if currency_helper not available
+            if user_budget < user_object.spend:
+                raise litellm.BudgetExceededError(
+                    current_cost=user_object.spend,
+                    max_budget=user_budget,
+                    message=f"ExceededBudget: User={user_object.user_id} over budget. Spend={user_object.spend}, Budget={user_budget}",
+                )
 
     ## 4.2 check team member budget, if team key
     await _check_team_member_budget(
@@ -188,12 +212,37 @@ async def common_checks(
     # 5. If end_user ('user' passed to /chat/completions, /embeddings endpoint) is in budget
     if end_user_object is not None and end_user_object.litellm_budget_table is not None:
         end_user_budget = end_user_object.litellm_budget_table.max_budget
-        if end_user_budget is not None and end_user_object.spend > end_user_budget:
-            raise litellm.BudgetExceededError(
-                current_cost=end_user_object.spend,
-                max_budget=end_user_budget,
-                message=f"ExceededBudget: End User={end_user_object.user_id} over budget. Spend={end_user_object.spend}, Budget={end_user_budget}",
-            )
+
+        if end_user_budget is not None:
+            # Multi-currency budget check
+            try:
+                from litellm.proxy.utils.currency_helper import get_currency_helper
+                currency_helper = get_currency_helper()
+
+                spend_currency = getattr(end_user_object, "spend_currency", "USD")
+                budget_currency = getattr(end_user_object.litellm_budget_table, "budget_currency", "USD")
+
+                is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                    spend_amount=end_user_object.spend,
+                    spend_currency=spend_currency,
+                    budget_amount=end_user_budget,
+                    budget_currency=budget_currency,
+                )
+
+                if is_over_budget:
+                    raise litellm.BudgetExceededError(
+                        current_cost=end_user_object.spend,
+                        max_budget=end_user_budget,
+                        message=f"ExceededBudget: End User={end_user_object.user_id} over budget. Spend={end_user_object.spend} {spend_currency}, Budget={end_user_budget} {budget_currency}",
+                    )
+            except ImportError:
+                # Fallback to simple comparison if currency_helper not available
+                if end_user_object.spend > end_user_budget:
+                    raise litellm.BudgetExceededError(
+                        current_cost=end_user_object.spend,
+                        max_budget=end_user_budget,
+                        message=f"ExceededBudget: End User={end_user_object.user_id} over budget. Spend={end_user_object.spend}, Budget={end_user_budget}",
+                    )
 
     # 6. [OPTIONAL] If 'enforce_user_param' enabled - did developer pass in 'user' param for openai endpoints
     if (
@@ -1940,7 +1989,26 @@ async def _virtual_key_max_budget_check(
         # collect information for alerting #
         ####################################
 
-        if valid_token.spend >= valid_token.max_budget:
+        # Multi-currency budget check
+        is_over_budget = False
+        try:
+            from litellm.proxy.utils.currency_helper import get_currency_helper
+            currency_helper = get_currency_helper()
+
+            spend_currency = getattr(valid_token, "spend_currency", "USD")
+            budget_currency = getattr(valid_token, "budget_currency", "USD")
+
+            is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=valid_token.spend,
+                spend_currency=spend_currency,
+                budget_amount=valid_token.max_budget,
+                budget_currency=budget_currency,
+            )
+        except ImportError:
+            # Fallback to simple comparison if currency_helper not available
+            is_over_budget = valid_token.spend >= valid_token.max_budget
+
+        if is_over_budget:
             raise litellm.BudgetExceededError(
                 current_cost=valid_token.spend,
                 max_budget=valid_token.max_budget,
@@ -1957,33 +2025,53 @@ async def _virtual_key_soft_budget_check(
 
     """
 
-    if valid_token.soft_budget and valid_token.spend >= valid_token.soft_budget:
-        verbose_proxy_logger.debug(
-            "Crossed Soft Budget for token %s, spend %s, soft_budget %s",
-            valid_token.token,
-            valid_token.spend,
-            valid_token.soft_budget,
-        )
-        call_info = CallInfo(
-            token=valid_token.token,
-            spend=valid_token.spend,
-            max_budget=valid_token.max_budget,
-            soft_budget=valid_token.soft_budget,
-            user_id=valid_token.user_id,
-            team_id=valid_token.team_id,
-            team_alias=valid_token.team_alias,
-            organization_id=valid_token.org_id,
-            user_email=user_obj.user_email if user_obj else None,
-            key_alias=valid_token.key_alias,
-            event_group=Litellm_EntityType.KEY,
-        )
+    if valid_token.soft_budget:
+        # Multi-currency soft budget check
+        is_over_soft_budget = False
+        try:
+            from litellm.proxy.utils.currency_helper import get_currency_helper
+            currency_helper = get_currency_helper()
 
-        asyncio.create_task(
-            proxy_logging_obj.budget_alerts(
-                type="soft_budget",
-                user_info=call_info,
+            spend_currency = getattr(valid_token, "spend_currency", "USD")
+            budget_currency = getattr(valid_token, "budget_currency", "USD")
+
+            is_over_soft_budget, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=valid_token.spend,
+                spend_currency=spend_currency,
+                budget_amount=valid_token.soft_budget,
+                budget_currency=budget_currency,
             )
-        )
+        except ImportError:
+            # Fallback to simple comparison if currency_helper not available
+            is_over_soft_budget = valid_token.spend >= valid_token.soft_budget
+
+        if is_over_soft_budget:
+            verbose_proxy_logger.debug(
+                "Crossed Soft Budget for token %s, spend %s, soft_budget %s",
+                valid_token.token,
+                valid_token.spend,
+                valid_token.soft_budget,
+            )
+            call_info = CallInfo(
+                token=valid_token.token,
+                spend=valid_token.spend,
+                max_budget=valid_token.max_budget,
+                soft_budget=valid_token.soft_budget,
+                user_id=valid_token.user_id,
+                team_id=valid_token.team_id,
+                team_alias=valid_token.team_alias,
+                organization_id=valid_token.org_id,
+                user_email=user_obj.user_email if user_obj else None,
+                key_alias=valid_token.key_alias,
+                event_group=Litellm_EntityType.KEY,
+            )
+
+            asyncio.create_task(
+                proxy_logging_obj.budget_alerts(
+                    type="soft_budget",
+                    user_info=call_info,
+                )
+            )
 
 
 async def _virtual_key_max_budget_alert_check(
@@ -2004,9 +2092,39 @@ async def _virtual_key_max_budget_alert_check(
         and valid_token.spend > 0
     ):
         alert_threshold = valid_token.max_budget * EMAIL_BUDGET_ALERT_MAX_SPEND_ALERT_PERCENTAGE
-        
+
+        # Multi-currency alert threshold check
+        is_over_alert_threshold = False
+        is_over_max_budget = False
+        try:
+            from litellm.proxy.utils.currency_helper import get_currency_helper
+            currency_helper = get_currency_helper()
+
+            spend_currency = getattr(valid_token, "spend_currency", "USD")
+            budget_currency = getattr(valid_token, "budget_currency", "USD")
+
+            # Check if over alert threshold
+            is_over_alert_threshold, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=valid_token.spend,
+                spend_currency=spend_currency,
+                budget_amount=alert_threshold,
+                budget_currency=budget_currency,
+            )
+
+            # Check if over max budget
+            is_over_max_budget, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=valid_token.spend,
+                spend_currency=spend_currency,
+                budget_amount=valid_token.max_budget,
+                budget_currency=budget_currency,
+            )
+        except ImportError:
+            # Fallback to simple comparison if currency_helper not available
+            is_over_alert_threshold = valid_token.spend >= alert_threshold
+            is_over_max_budget = valid_token.spend >= valid_token.max_budget
+
         # Only alert if we've crossed the threshold but haven't exceeded max_budget yet
-        if valid_token.spend >= alert_threshold and valid_token.spend < valid_token.max_budget:
+        if is_over_alert_threshold and not is_over_max_budget:
             verbose_proxy_logger.debug(
                 "Reached Max Budget Alert Threshold for token %s, spend %s, max_budget %s, alert_threshold %s",
                 valid_token.token,
@@ -2067,13 +2185,36 @@ async def _check_team_member_budget(
         ):
             team_member_budget = team_membership.litellm_budget_table.max_budget
             team_member_spend = team_membership.spend or 0.0
-            
-            if team_member_spend > team_member_budget:
-                raise litellm.BudgetExceededError(
-                    current_cost=team_member_spend,
-                    max_budget=team_member_budget,
-                    message=f"Budget has been exceeded! User={valid_token.user_id} in Team={team_object.team_id} Current cost: {team_member_spend}, Max budget: {team_member_budget}",
+
+            # Multi-currency budget check
+            try:
+                from litellm.proxy.utils.currency_helper import get_currency_helper
+                currency_helper = get_currency_helper()
+
+                spend_currency = getattr(team_membership, "spend_currency", "USD")
+                budget_currency = getattr(team_membership.litellm_budget_table, "budget_currency", "USD")
+
+                is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                    spend_amount=team_member_spend,
+                    spend_currency=spend_currency,
+                    budget_amount=team_member_budget,
+                    budget_currency=budget_currency,
                 )
+
+                if is_over_budget:
+                    raise litellm.BudgetExceededError(
+                        current_cost=team_member_spend,
+                        max_budget=team_member_budget,
+                        message=f"Budget has been exceeded! User={valid_token.user_id} in Team={team_object.team_id} Current cost: {team_member_spend} {spend_currency}, Max budget: {team_member_budget} {budget_currency}",
+                    )
+            except ImportError:
+                # Fallback to simple comparison if currency_helper not available
+                if team_member_spend > team_member_budget:
+                    raise litellm.BudgetExceededError(
+                        current_cost=team_member_spend,
+                        max_budget=team_member_budget,
+                        message=f"Budget has been exceeded! User={valid_token.user_id} in Team={team_object.team_id} Current cost: {team_member_spend}, Max budget: {team_member_budget}",
+                    )
 
 
 async def _team_max_budget_check(
@@ -2092,31 +2233,53 @@ async def _team_max_budget_check(
         team_object is not None
         and team_object.max_budget is not None
         and team_object.spend is not None
-        and team_object.spend > team_object.max_budget
     ):
-        if valid_token:
-            call_info = CallInfo(
-                token=valid_token.token,
-                spend=team_object.spend,
-                max_budget=team_object.max_budget,
-                user_id=valid_token.user_id,
-                team_id=valid_token.team_id,
-                team_alias=valid_token.team_alias,
-                organization_id=valid_token.org_id,
-                event_group=Litellm_EntityType.TEAM,
-            )
-            asyncio.create_task(
-                proxy_logging_obj.budget_alerts(
-                    type="team_budget",
-                    user_info=call_info,
-                )
-            )
+        # Multi-currency budget check
+        is_over_budget = False
+        try:
+            from litellm.proxy.utils.currency_helper import get_currency_helper
+            currency_helper = get_currency_helper()
 
-        raise litellm.BudgetExceededError(
-            current_cost=team_object.spend,
-            max_budget=team_object.max_budget,
-            message=f"Budget has been exceeded! Team={team_object.team_id} Current cost: {team_object.spend}, Max budget: {team_object.max_budget}",
-        )
+            spend_currency = getattr(team_object, "spend_currency", "USD")
+            budget_currency = getattr(team_object, "budget_currency", "USD")
+
+            is_over_budget, _ = currency_helper.compare_spend_to_budget(
+                spend_amount=team_object.spend,
+                spend_currency=spend_currency,
+                budget_amount=team_object.max_budget,
+                budget_currency=budget_currency,
+            )
+        except ImportError:
+            # Fallback to simple comparison if currency_helper not available
+            is_over_budget = team_object.spend > team_object.max_budget
+
+        if is_over_budget:
+            if valid_token:
+                call_info = CallInfo(
+                    token=valid_token.token,
+                    spend=team_object.spend,
+                    max_budget=team_object.max_budget,
+                    user_id=valid_token.user_id,
+                    team_id=valid_token.team_id,
+                    team_alias=valid_token.team_alias,
+                    organization_id=valid_token.org_id,
+                    event_group=Litellm_EntityType.TEAM,
+                )
+                asyncio.create_task(
+                    proxy_logging_obj.budget_alerts(
+                        type="team_budget",
+                        user_info=call_info,
+                    )
+                )
+
+            spend_currency = getattr(team_object, "spend_currency", "USD")
+            budget_currency = getattr(team_object, "budget_currency", "USD")
+
+            raise litellm.BudgetExceededError(
+                current_cost=team_object.spend,
+                max_budget=team_object.max_budget,
+                message=f"Budget has been exceeded! Team={team_object.team_id} Current cost: {team_object.spend} {spend_currency}, Max budget: {team_object.max_budget} {budget_currency}",
+            )
 
 
 async def _organization_max_budget_check(

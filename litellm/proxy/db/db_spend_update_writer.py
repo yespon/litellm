@@ -119,6 +119,60 @@ class DBSpendUpdateWriter:
                 end_time=end_time,
             )
             payload["spend"] = response_cost or 0.0
+
+            # ========== Multi-Currency Support ==========
+            # Add currency information to payload
+            # Default to USD for backward compatibility
+            try:
+                from litellm.proxy.utils.currency_helper import get_currency_helper
+
+                currency_helper = get_currency_helper()
+
+                # Determine the target currency from the entity (token/user/team)
+                # Priority: token > team > user > USD (default)
+                target_currency = "USD"  # Default
+
+                # Try to get currency from token if available
+                if hashed_token and user_api_key_cache:
+                    try:
+                        token_data = user_api_key_cache.get_cache(key=hashed_token)
+                        if token_data:
+                            target_currency = currency_helper.get_entity_currency(
+                                token_data, entity_type="token"
+                            )
+                    except Exception as token_err:
+                        verbose_proxy_logger.debug(
+                            f"Could not retrieve token currency: {token_err}"
+                        )
+
+                # Prepare currency information for spend log
+                currency_info = currency_helper.prepare_spend_log_with_currency(
+                    cost_usd=response_cost or 0.0,
+                    target_currency=target_currency,
+                )
+
+                # Update payload with currency fields
+                payload["spend"] = currency_info["spend"]  # Converted amount
+                payload["spend_currency"] = currency_info["spend_currency"]
+                payload["model_currency"] = currency_info.get("model_currency")
+                payload["spend_original"] = currency_info.get("spend_original")
+                payload["exchange_rate"] = currency_info.get("exchange_rate")
+
+                verbose_proxy_logger.debug(
+                    f"Currency conversion: {response_cost} USD -> {payload['spend']} {payload['spend_currency']}"
+                )
+
+            except Exception as currency_err:
+                # If currency conversion fails, fall back to USD
+                verbose_proxy_logger.warning(
+                    f"Currency conversion failed, using USD: {currency_err}"
+                )
+                payload["spend_currency"] = "USD"
+                payload["model_currency"] = None
+                payload["spend_original"] = None
+                payload["exchange_rate"] = None
+            # ========== End Multi-Currency Support ==========
+
             if isinstance(payload["startTime"], datetime):
                 payload["startTime"] = payload["startTime"].isoformat()
             if isinstance(payload["endTime"], datetime):
@@ -1523,6 +1577,7 @@ class DBSpendUpdateWriter:
                 prompt_tokens=payload["prompt_tokens"],
                 completion_tokens=payload["completion_tokens"],
                 spend=payload["spend"],
+                spend_currency=payload.get("spend_currency", "USD"),  # Currency code for spend tracking
                 api_requests=1,
                 successful_requests=1 if request_status == "success" else 0,
                 failed_requests=1 if request_status != "success" else 0,

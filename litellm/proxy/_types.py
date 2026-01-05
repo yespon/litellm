@@ -2750,6 +2750,10 @@ class SpendLogsPayload(TypedDict):
     call_type: str
     api_key: str
     spend: float
+    spend_currency: str  # Currency code (USD, CNY, EUR, etc.)
+    model_currency: Optional[str]  # Original currency from model provider (for future use)
+    spend_original: Optional[float]  # Original spend amount before currency conversion
+    exchange_rate: Optional[float]  # Exchange rate used for conversion
     total_tokens: int
     prompt_tokens: int
     completion_tokens: int
@@ -3714,6 +3718,7 @@ class BaseDailySpendTransaction(TypedDict):
 
     # request level metrics
     spend: float
+    spend_currency: str  # Currency code for spend tracking
     api_requests: int
     successful_requests: int
     failed_requests: int
