@@ -8215,3 +8215,124 @@ export const updateUiSettings = async (accessToken: string, settings: Record<str
   const data = await response.json();
   return data;
 };
+
+// ==================== Currency Management ====================
+
+/**
+ * Get list of supported currencies
+ *
+ * @param accessToken - API access token
+ * @returns Promise with currencies list
+ *
+ * Example response:
+ * {
+ *   "currencies": [
+ *     {"code": "USD", "name": "US Dollar"},
+ *     {"code": "CNY", "name": "Chinese Yuan"},
+ *     ...
+ *   ],
+ *   "count": 9
+ * }
+ */
+export const getSupportedCurrencies = async (accessToken: string) => {
+  const proxyBaseUrl = getProxyBaseUrl();
+  const url = proxyBaseUrl ? `${proxyBaseUrl}/currency/supported` : `/currency/supported`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    const errorMessage = deriveErrorMessage(errorData);
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  return data;
+};
+
+/**
+ * Get current exchange rates
+ *
+ * @param accessToken - API access token
+ * @returns Promise with exchange rates
+ *
+ * Example response:
+ * {
+ *   "base_currency": "USD",
+ *   "rates": {
+ *     "CNY": 7.2,
+ *     "EUR": 0.92,
+ *     "GBP": 0.79,
+ *     ...
+ *   },
+ *   "last_updated": "2025-01-15T10:00:00Z"
+ * }
+ */
+export const getExchangeRates = async (accessToken: string) => {
+  const proxyBaseUrl = getProxyBaseUrl();
+  const url = proxyBaseUrl ? `${proxyBaseUrl}/currency/rates` : `/currency/rates`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    const errorMessage = deriveErrorMessage(errorData);
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  return data;
+};
+
+/**
+ * Update exchange rates (Admin only)
+ *
+ * @param accessToken - API access token
+ * @param rates - Dictionary of currency codes to rates (relative to USD)
+ * @returns Promise with update status
+ *
+ * Example request:
+ * {
+ *   "CNY": 7.30,
+ *   "EUR": 0.93,
+ *   "GBP": 0.80
+ * }
+ *
+ * Example response:
+ * {
+ *   "status": "success",
+ *   "updated_currencies": ["CNY", "EUR", "GBP"],
+ *   "updated_at": "2025-01-15T10:30:00Z"
+ * }
+ */
+export const updateExchangeRates = async (accessToken: string, rates: Record<string, number>) => {
+  const proxyBaseUrl = getProxyBaseUrl();
+  const url = proxyBaseUrl ? `${proxyBaseUrl}/currency/rates` : `/currency/rates`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(rates),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    const errorMessage = deriveErrorMessage(errorData);
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  return data;
+};

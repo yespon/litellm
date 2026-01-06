@@ -28,12 +28,13 @@ import {
   Title,
   Button as TremorButton,
 } from "@tremor/react";
-import { Button, Form, Input, message, Select, Switch, Tooltip } from "antd";
+import { Button, Form, Input, message, Select, Switch, Tooltip, Row, Col } from "antd";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { copyToClipboard as utilCopyToClipboard } from "../../utils/dataUtils";
 import AgentSelector from "../agent_management/AgentSelector";
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
+import CurrencySelector from "../common_components/currency_selector";
 import PassThroughRoutesSelector from "../common_components/PassThroughRoutesSelector";
 import { getModelDisplayName, unfurlWildcardModelsInList } from "../key_team_helpers/fetch_available_models_team_key";
 import LoggingSettingsView from "../logging_settings_view";
@@ -735,17 +736,40 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                     </Select>
                   </Form.Item>
 
-                  <Form.Item label="Max Budget (USD)" name="max_budget">
-                    <NumericalInput step={0.01} precision={2} style={{ width: "100%" }} />
-                  </Form.Item>
+                  <Row gutter={16}>
+                    <Col span={16}>
+                      <Form.Item label="Max Budget" name="max_budget">
+                        <NumericalInput step={0.01} precision={2} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="Currency" name="budget_currency" initialValue="USD">
+                        <CurrencySelector accessToken={accessToken} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-                  <Form.Item
-                    label="Team Member Budget (USD)"
-                    name="team_member_budget"
-                    tooltip="This is the individual budget for a user in the team."
-                  >
-                    <NumericalInput step={0.01} precision={2} style={{ width: "100%" }} />
-                  </Form.Item>
+                  <Row gutter={16}>
+                    <Col span={16}>
+                      <Form.Item
+                        label="Team Member Budget"
+                        name="team_member_budget"
+                        tooltip="This is the individual budget for a user in the team."
+                      >
+                        <NumericalInput step={0.01} precision={2} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        label="Member Currency"
+                        name="team_member_budget_currency"
+                        initialValue="USD"
+                        tooltip="Currency for team member budgets"
+                      >
+                        <CurrencySelector accessToken={accessToken} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
                   <Form.Item
                     label="Team Member Key Duration (eg: 1d, 1mo)"

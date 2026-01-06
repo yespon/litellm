@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { TextInput, SelectItem } from "@tremor/react";
 
-import { Button as Button2, Modal, Form, Select as Select2, InputNumber } from "antd";
+import { Button as Button2, Modal, Form, Select as Select2, InputNumber, Row, Col } from "antd";
 
 import NumericalInput from "./shared/numerical_input";
 import BudgetDurationDropdown from "./common_components/budget_duration_dropdown";
+import CurrencySelector from "./common_components/currency_selector";
 
 interface EditUserModalProps {
   visible: boolean;
@@ -12,9 +13,10 @@ interface EditUserModalProps {
   onCancel: () => void;
   user: any;
   onSubmit: (data: any) => void;
+  accessToken?: string | null;
 }
 
-const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles, onCancel, user, onSubmit }) => {
+const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles, onCancel, user, onSubmit, accessToken }) => {
   const [editedUser, setEditedUser] = useState(user);
   const [form] = Form.useForm();
 
@@ -82,14 +84,23 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles,
             <InputNumber min={0} step={0.01} />
           </Form.Item>
 
-          <Form.Item
-            label="User Budget (USD)"
-            name="max_budget"
-            tooltip="(float) - Maximum budget of this user"
-            help="Maximum budget of this user."
-          >
-            <NumericalInput min={0} step={0.01} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={16}>
+              <Form.Item
+                label="User Budget"
+                name="max_budget"
+                tooltip="(float) - Maximum budget of this user"
+                help="Maximum budget of this user."
+              >
+                <NumericalInput min={0} step={0.01} style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Currency" name="budget_currency" initialValue="USD">
+                <CurrencySelector accessToken={accessToken} />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item label="Reset Budget" name="budget_duration">
             <BudgetDurationDropdown />

@@ -1,8 +1,9 @@
 import React from "react";
 import { TextInput, Accordion, AccordionHeader, AccordionBody } from "@tremor/react";
-import { Button as Button2, Modal, Form, InputNumber, Select } from "antd";
+import { Button as Button2, Modal, Form, InputNumber, Select, Row, Col } from "antd";
 import { budgetCreateCall } from "../networking";
 import NotificationsManager from "../molecules/notifications_manager";
+import CurrencySelector from "../common_components/currency_selector";
 
 interface BudgetModalProps {
   isModalVisible: boolean;
@@ -76,9 +77,18 @@ const BudgetModal: React.FC<BudgetModalProps> = ({ isModalVisible, accessToken, 
               <b>Optional Settings</b>
             </AccordionHeader>
             <AccordionBody>
-              <Form.Item label="Max Budget (USD)" name="max_budget">
-                <InputNumber step={0.01} precision={2} width={200} />
-              </Form.Item>
+              <Row gutter={16}>
+                <Col span={16}>
+                  <Form.Item label="Max Budget" name="max_budget">
+                    <InputNumber step={0.01} precision={2} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="Currency" name="budget_currency" initialValue="USD">
+                    <CurrencySelector accessToken={accessToken} />
+                  </Form.Item>
+                </Col>
+              </Row>
               <Form.Item className="mt-8" label="Reset Budget" name="budget_duration">
                 <Select defaultValue={null} placeholder="n/a">
                   <Select.Option value="24h">daily</Select.Option>

@@ -3,7 +3,7 @@ import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { Accordion, AccordionBody, AccordionHeader, Button, Col, Grid, Text, TextInput, Title } from "@tremor/react";
-import { Button as Button2, Form, Input, Modal, Radio, Select, Switch, Tooltip } from "antd";
+import { Button as Button2, Form, Input, Modal, Radio, Select, Switch, Tooltip, Row, Col as AntdCol } from "antd";
 import debounce from "lodash/debounce";
 import React, { useCallback, useEffect, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -11,6 +11,7 @@ import { rolesWithWriteAccess } from "../../utils/roles";
 import AgentSelector from "../agent_management/AgentSelector";
 import { mapDisplayToInternalNames } from "../callback_info_helpers";
 import BudgetDurationDropdown from "../common_components/budget_duration_dropdown";
+import CurrencySelector from "../common_components/currency_selector";
 import SchemaFormFields from "../common_components/check_openapi_schema";
 import KeyLifecycleSettings from "../common_components/KeyLifecycleSettings";
 import ModelAliasManager from "../common_components/ModelAliasManager";
@@ -720,32 +721,47 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
                   <Title className="m-0">Optional Settings</Title>
                 </AccordionHeader>
                 <AccordionBody>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        Max Budget (USD){" "}
-                        <Tooltip title="Maximum amount in USD this key can spend. When reached, the key will be blocked from making further requests">
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="max_budget"
-                    help={`Budget cannot exceed team max budget: $${team?.max_budget !== null && team?.max_budget !== undefined ? team?.max_budget : "unlimited"}`}
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (value && team && team.max_budget !== null && value > team.max_budget) {
-                            throw new Error(
-                              `Budget cannot exceed team max budget: $${formatNumberWithCommas(team.max_budget, 4)}`,
-                            );
-                          }
-                        },
-                      },
-                    ]}
-                  >
-                    <NumericalInput step={0.01} precision={2} width={200} />
-                  </Form.Item>
+                  <Row gutter={16}>
+                    <AntdCol span={16}>
+                      <Form.Item
+                        className="mt-4"
+                        label={
+                          <span>
+                            Max Budget{" "}
+                            <Tooltip title="Maximum amount this key can spend in the selected currency. When reached, the key will be blocked from making further requests">
+                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                            </Tooltip>
+                          </span>
+                        }
+                        name="max_budget"
+                        help={`Budget cannot exceed team max budget: $${team?.max_budget !== null && team?.max_budget !== undefined ? team?.max_budget : "unlimited"}`}
+                        rules={[
+                          {
+                            validator: async (_, value) => {
+                              if (value && team && team.max_budget !== null && value > team.max_budget) {
+                                throw new Error(
+                                  `Budget cannot exceed team max budget: $${formatNumberWithCommas(team.max_budget, 4)}`,
+                                );
+                              }
+                            },
+                          },
+                        ]}
+                      >
+                        <NumericalInput step={0.01} precision={2} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </AntdCol>
+                    <AntdCol span={8}>
+                      <Form.Item
+                        className="mt-4"
+                        label="Currency"
+                        name="budget_currency"
+                        initialValue="USD"
+                        tooltip="Currency for the budget"
+                      >
+                        <CurrencySelector accessToken={accessToken} />
+                      </Form.Item>
+                    </AntdCol>
+                  </Row>
                   <Form.Item
                     className="mt-4"
                     label={
