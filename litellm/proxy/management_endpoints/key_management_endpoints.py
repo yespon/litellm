@@ -2022,6 +2022,7 @@ async def generate_key_helper_fn(  # noqa: PLR0915
         float
     ] = None,  # soft_budget is used to set soft Budgets Per user
     max_budget: Optional[float] = None,  # max_budget is used to Budget Per user
+    budget_currency: Optional[str] = "USD",  # NEW: currency for budget
     blocked: Optional[bool] = None,
     budget_duration: Optional[str] = None,  # max_budget is used to Budget Per user
     token: Optional[str] = None,
@@ -2163,6 +2164,7 @@ async def generate_key_helper_fn(  # noqa: PLR0915
             "model_max_budget": model_max_budget_json,
             "organization_id": organization_id,
             "budget_id": budget_id,
+            "budget_currency": budget_currency,
             "blocked": blocked,
             "created_by": created_by,
             "updated_by": updated_by,

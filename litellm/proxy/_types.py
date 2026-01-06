@@ -819,6 +819,10 @@ class GenerateRequestBase(LiteLLMPydanticObjectBase):
     models: Optional[list] = []
     spend: Optional[float] = 0
     max_budget: Optional[float] = None
+    budget_currency: Optional[str] = Field(
+        default="USD",
+        description="Currency for budget (USD, CNY, EUR, GBP, JPY, etc.). Defaults to USD.",
+    )
     user_id: Optional[str] = None
     team_id: Optional[str] = None
     max_parallel_requests: Optional[int] = None
@@ -1442,6 +1446,14 @@ class TeamBase(LiteLLMPydanticObjectBase):
     # Budget fields
     max_budget: Optional[float] = None
     budget_duration: Optional[str] = None
+    budget_currency: Optional[str] = Field(
+        default="USD",
+        description="Currency for budget (USD, CNY, EUR, GBP, JPY, etc.). Defaults to USD.",
+    )
+    spend_currency: Optional[str] = Field(
+        default=None,
+        description="Currency for spend tracking. If not set, uses budget_currency.",
+    )
 
     models: list = []
     blocked: bool = False
