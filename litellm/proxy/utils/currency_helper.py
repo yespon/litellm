@@ -114,13 +114,10 @@ class CurrencyHelper:
         result = {
             "spend": converted_cost,
             "spend_currency": target_currency,
-            "exchange_rate": exchange_rate if target_currency != "USD" else None,
+            "model_currency": model_currency or "USD",  # Default to USD
+            "spend_original": model_original_cost or cost_usd,  # Original USD amount
+            "exchange_rate": exchange_rate,
         }
-
-        # 如果模型提供商使用了不同的货币（未来扩展）
-        if model_currency and model_currency != "USD":
-            result["model_currency"] = model_currency
-            result["spend_original"] = model_original_cost or cost_usd
 
         return result
 
