@@ -492,6 +492,79 @@ class CurrencyExchangeRateManager:
         logger.info("[Currency] Manual reload triggered")
         self.load_rates(force=True)
 
+    def reload_rates(self) -> None:
+        """Alias for reload() - 用于API端点"""
+        self.reload()
+
+    def get_last_updated_time(self) -> Optional[datetime]:
+        """获取最后更新时间"""
+        if self._use_redis:
+            # Redis 模式：尝试从 Redis 获取时间戳
+            try:
+                timestamp_key = f"{self._redis_key}:timestamp"
+                timestamp_str = self._redis_client.get(timestamp_key)
+                if timestamp_str:
+                    return datetime.fromisoformat(timestamp_str)
+            except Exception as e:
+                logger.debug(f"[Currency] Failed to get Redis timestamp: {e}")
+
+        # 返回内存中的最后更新时间
+        return self._last_update
+
+    def update_rates(self, rates: Dict[str, float]) -> None:
+        """
+        更新汇率到配置文件
+
+        Args:
+            rates: 货币代码到汇率的映射（相对于 USD）
+        """
+        if not self._config_path:
+            self._config_path = self._get_config_path()
+
+        try:
+            # 1. 读取现有配置
+            existing_config = {}
+            if self._config_path.exists():
+                with open(self._config_path, 'r', encoding='utf-8') as f:
+                    existing_config = json.load(f)
+
+            # 2. 更新汇率
+            if "rates" not in existing_config:
+                existing_config["rates"] = {}
+
+            existing_config["rates"].update(rates)
+            existing_config["last_updated"] = datetime.now().isoformat()
+
+            # 3. 写入文件
+            self._config_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._config_path, 'w', encoding='utf-8') as f:
+                json.dump(existing_config, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"[Currency] Updated {len(rates)} rates to file")
+
+            # 4. 如果使用 Redis，更新 Redis 缓存
+            if self._use_redis:
+                self._update_redis_cache(existing_config["rates"])
+                # 同时更新时间戳
+                try:
+                    timestamp_key = f"{self._redis_key}:timestamp"
+                    self._redis_client.setex(
+                        timestamp_key,
+                        self._redis_ttl,
+                        existing_config["last_updated"]
+                    )
+                except Exception as e:
+                    logger.warning(f"[Currency] Failed to update Redis timestamp: {e}")
+
+            # 5. 更新内存缓存
+            with self._lock:
+                self._rates = existing_config["rates"]
+                self._last_update = datetime.now()
+
+        except Exception as e:
+            logger.error(f"[Currency] Failed to update rates: {e}")
+            raise
+
     def load_rates(self, force: bool = False) -> None:
         """加载汇率（兼容旧接口）"""
         if force:
