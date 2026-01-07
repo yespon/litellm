@@ -171,7 +171,7 @@ async def common_checks(
 
         # Multi-currency budget check
         try:
-            from litellm.proxy.utils.currency_helper import get_currency_helper
+            from litellm.proxy.currency_utils.currency_helper import get_currency_helper
             currency_helper = get_currency_helper()
 
             spend_currency = getattr(user_object, "spend_currency", "USD")
@@ -216,7 +216,7 @@ async def common_checks(
         if end_user_budget is not None:
             # Multi-currency budget check
             try:
-                from litellm.proxy.utils.currency_helper import get_currency_helper
+                from litellm.proxy.currency_utils.currency_helper import get_currency_helper
                 currency_helper = get_currency_helper()
 
                 spend_currency = getattr(end_user_object, "spend_currency", "USD")
@@ -1992,7 +1992,7 @@ async def _virtual_key_max_budget_check(
         # Multi-currency budget check
         is_over_budget = False
         try:
-            from litellm.proxy.utils.currency_helper import get_currency_helper
+            from litellm.proxy.currency_utils.currency_helper import get_currency_helper
             currency_helper = get_currency_helper()
 
             spend_currency = getattr(valid_token, "spend_currency", "USD")
@@ -2029,7 +2029,7 @@ async def _virtual_key_soft_budget_check(
         # Multi-currency soft budget check
         is_over_soft_budget = False
         try:
-            from litellm.proxy.utils.currency_helper import get_currency_helper
+            from litellm.proxy.currency_utils.currency_helper import get_currency_helper
             currency_helper = get_currency_helper()
 
             spend_currency = getattr(valid_token, "spend_currency", "USD")
@@ -2097,7 +2097,7 @@ async def _virtual_key_max_budget_alert_check(
         is_over_alert_threshold = False
         is_over_max_budget = False
         try:
-            from litellm.proxy.utils.currency_helper import get_currency_helper
+            from litellm.proxy.currency_utils.currency_helper import get_currency_helper
             currency_helper = get_currency_helper()
 
             spend_currency = getattr(valid_token, "spend_currency", "USD")
@@ -2188,7 +2188,7 @@ async def _check_team_member_budget(
 
             # Multi-currency budget check
             try:
-                from litellm.proxy.utils.currency_helper import get_currency_helper
+                from litellm.proxy.currency_utils.currency_helper import get_currency_helper
                 currency_helper = get_currency_helper()
 
                 spend_currency = getattr(team_membership, "spend_currency", "USD")
@@ -2237,7 +2237,7 @@ async def _team_max_budget_check(
         # Multi-currency budget check
         is_over_budget = False
         try:
-            from litellm.proxy.utils.currency_helper import get_currency_helper
+            from litellm.proxy.currency_utils.currency_helper import get_currency_helper
             currency_helper = get_currency_helper()
 
             spend_currency = getattr(team_object, "spend_currency", "USD")

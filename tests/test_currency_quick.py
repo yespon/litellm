@@ -20,7 +20,7 @@ try:
         convert_currency,
         get_exchange_rate
     )
-    from litellm.proxy.utils.currency_helper import (
+    from litellm.proxy.currency_utils.currency_helper import (
         get_entity_currency,
         convert_to_usd,
         convert_from_usd

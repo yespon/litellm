@@ -14,7 +14,7 @@ import pytest
 # Add the parent directory to the path to import litellm
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from litellm.proxy.utils.currency_helper import CurrencyHelper, get_currency_helper
+from litellm.proxy.currency_utils.currency_helper import CurrencyHelper, get_currency_helper
 
 
 class TestCurrencyHelper:

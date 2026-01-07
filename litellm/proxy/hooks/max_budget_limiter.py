@@ -38,7 +38,7 @@ class _PROXY_MaxBudgetLimiter(CustomLogger):
 
             # Multi-currency budget check
             try:
-                from litellm.proxy.utils.currency_helper import get_currency_helper
+                from litellm.proxy.currency_utils.currency_helper import get_currency_helper
                 currency_helper = get_currency_helper()
 
                 spend_currency = user_row.get("spend_currency", "USD")

@@ -60,7 +60,7 @@ class TestCurrencyHelperBasic:
         mock_manager_class,
     ):
         """Test extracting currency from dictionary entity data"""
-        from litellm.proxy.utils.currency_helper import CurrencyHelper
+        from litellm.proxy.currency_utils.currency_helper import CurrencyHelper
 
         helper = CurrencyHelper()
 
@@ -95,7 +95,7 @@ class TestCurrencyHelperBasic:
         mock_get_exchange_rate
     ):
         """Test converting USD to entity currency"""
-        from litellm.proxy.utils.currency_helper import CurrencyHelper
+        from litellm.proxy.currency_utils.currency_helper import CurrencyHelper
 
         # Setup mocks
         mock_convert.side_effect = mock_convert_currency
@@ -125,7 +125,7 @@ class TestCurrencyHelperBasic:
         mock_get_exchange_rate
     ):
         """Test preparing spend log with currency information"""
-        from litellm.proxy.utils.currency_helper import CurrencyHelper
+        from litellm.proxy.currency_utils.currency_helper import CurrencyHelper
 
         # Setup mocks
         mock_convert.side_effect = mock_convert_currency
@@ -152,7 +152,7 @@ class TestCurrencyHelperBasic:
     @patch('litellm.proxy.utils.currency_helper.CurrencyExchangeRateManager')
     def test_get_currency_helper_singleton(self, mock_manager_class):
         """Test that get_currency_helper returns singleton"""
-        from litellm.proxy.utils.currency_helper import get_currency_helper, _currency_helper
+        from litellm.proxy.currency_utils.currency_helper import get_currency_helper, _currency_helper
 
         # Reset singleton
         import litellm.proxy.utils.currency_helper as helper_module
